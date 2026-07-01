@@ -198,13 +198,20 @@ export async function getInvoices(req, res){
         const {userId} = getAuth(req) || {};
         if(!userId){
             return res.status(401).json({
-        sucess:false,
+        success:false,
         message:"Authenticatin required."})
             }
+
+            // Auto-mark unpaid invoices past due date as overdue
+            const today = new Date().toISOString().slice(0, 10);
+            await Invoice.updateMany(
+              { owner: userId, status: 'unpaid', $or: [{ dueDate: { $lt: today } }, { dueDate: '' }] },
+              { $set: { status: 'overdue' } }
+            );
+
             const q={owner:userId};
             if(req.query.status) q.status = req.query.status;
             if(req.query.invoiceNumber) q.invoiceNumber = req.query.invoiceNumber;
-            //// for filter
             if (req.query.search) {
       const search = req.query.search.trim();
       q.$or = [
@@ -216,14 +223,14 @@ export async function getInvoices(req, res){
     }
 const invoices =await Invoice.find(q).sort({createdAt:-1}).lean();
 return res.status(200).json({
-    sucess:true,
+    success:true,
     data:invoices
 });
     }
 catch(err){
     console.error("GETINVOICE ERROR" , err);
     return res.status(500).json({
-        sucess:false,
+        success:false,
         message:"Server Error"
     });
 } 
@@ -235,32 +242,40 @@ export async function getInvoiceById(req,res){
        const {userId} =getAuth(req) || {};
        if(!userId){
             return res.status(401).json({
-        sucess:false,
+        success:false,
         message:"Authenticatin required."})
             }
+
+            // Auto-mark unpaid past due as overdue
+            const today = new Date().toISOString().slice(0, 10);
+            await Invoice.updateMany(
+              { owner: userId, status: 'unpaid', $or: [{ dueDate: { $lt: today } }, { dueDate: '' }] },
+              { $set: { status: 'overdue' } }
+            );
+
             const {id}= req.params;
             let inv;
             if(isObjectIdString(id)) inv =await Invoice.findById(id);
             else inv=await Invoice.findOne({invoiceNumber:id});
             if(!inv) return res.status(404).json({
-              sucess:false,
+              success:false,
               message:"Invoice not found"
             });
             if(inv.owner &&String(inv.owner)!=String(userId)){
               return res.status(403).json({
-                sucess:false,
+                success:false,
                 message:"Forbidden not your invoice"
               });
             }
             return res.status(200).json({
-              sucess:true,
+              success:true,
               data:inv
             });
     }
     catch(err){
     console.error("GETINVOICEBYID ERROR" , err);
     return res.status(500).json({
-        sucess:false,
+        success:false,
         message:"Server Error"
     });
 } 
@@ -272,7 +287,7 @@ try{
   const {userId} =getAuth(req) || {};
        if(!userId){
             return res.status(401).json({
-        sucess:false,
+        success:false,
         message:"Authenticatin required."})
             }
             const {id}=req.params;
@@ -280,7 +295,7 @@ try{
             const query =isObjectIdString(id)?{_id:id,owner:userId}:{invoiceNumber:id,owner:userId};
             const existing = await Invoice.findOne(query);
             if(!existing){
-              return res.status(404).json({sucess:false , message:"Invoice not found"})
+              return res.status(404).json({success:false , message:"Invoice not found"})
 
             }
             ////if user changes the invoice number
@@ -351,11 +366,11 @@ try{
     {new:true, runValidators:true}
   );
   if(!updated) return res.status(500).json({
-    sucess:false,
+    success:false,
     message:"Invoice not updated"
   });
   return res.status(200).json({
-    sucess:true,
+    success:true,
     message:"Invoice updated",
     data:updated
   });
@@ -376,7 +391,7 @@ export async function deleteInvoice(req,res){
       const {userId} =getAuth(req) || {};
        if(!userId){
             return res.status(401).json({
-        sucess:false,
+        success:false,
         message:"Authenticatin required."});
             }
              const {id}=req.params;
@@ -384,20 +399,20 @@ export async function deleteInvoice(req,res){
             {invoiceNumber:id,owner:userId};
             const found =await Invoice.findOne(query);
             if(!found){ return res.status(404).json({
-              sucess:false,
+              success:false,
               message:"Invoice not found"
             });
   }
   await Invoice.deleteOne({_id:found._id});
   return res.status(200).json({
-    sucess:true,
-    message:"Invoice deleted sucessfully"
+    success:true,
+    message:"Invoice deleted successfully"
   });
 }
   catch(err){
     console.error("DELETEINVOICE ERROR" , err);
     return res.status(500).json({
-        sucess:false,
+        success:false,
         message:"Server Error"
     });
 } 
