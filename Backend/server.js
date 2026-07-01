@@ -32,12 +32,9 @@ connectDB();
 const frontendDist = path.join(__dirname, '..', 'Frontend', 'dist');
 app.use(express.static(frontendDist));
 
-////////uploads
-app.use('/uploads',express.static(path.join(process.cwd(),"uploads")));
-
 ////////catch-all for SPA routing (production)
 app.get('/{*path}', (req, res) => {
-    if (req.path.startsWith('/api') || req.path.startsWith('/uploads')) return;
+    if (req.path.startsWith('/api')) return;
     res.sendFile(path.join(frontendDist, 'index.html'), err => {
         if (err) res.status(404).send('Not found');
     });

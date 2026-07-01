@@ -1,8 +1,7 @@
 import mongoose from 'mongoose'
 import Invoice from '../models/invoicemodel.js'
+import BusinessProfile from '../models/businessProfileModel.js'
 import {getAuth} from '@clerk/express'
-import path from 'path';
-const API_BASE='http://localhost:4000'
 function computeTotals(item =[], taxPercent =0){
     const safe = Array.isArray(item) ? item.filter(Boolean):[];
     const subtotal =safe.reduce(
@@ -31,28 +30,23 @@ function parseItemField(val){
 function isObjectIdString(val){
     return typeof val ==='string' && /^[0-9a-fA-F]{24}$/.test(val);
 }
-//// for helper function for uploding the image to public folder
-function uploadedFilesToUrls(req) {
-  const urls = {};
-  if (!req.files) return urls;
-  const mapping = {
-    logoName: "logoDataUrl",
-    stampName: "stampDataUrl",
-    signatureNameMeta: "signatureDataUrl",
-    logo: "logoDataUrl",
-    stamp: "stampDataUrl",
-    signature: "signatureDataUrl",
-  };
-  Object.keys(mapping).forEach((field) => {
-    const arr = req.files[field];
-    if (Array.isArray(arr) && arr[0]) {
-      const filename =
-        arr[0].filename || (arr[0].path && path.basename(arr[0].path));
-      if (filename) urls[mapping[field]] = `${API_BASE}/uploads/${filename}`;
+////fetch brand assets from business profile as fallback
+async function brandFallback(userId, body) {
+  const brand = {};
+  if (body.logoDataUrl || body.logo) return brand;
+  if (body.stampDataUrl || body.stamp) return brand;
+  if (body.signatureDataUrl || body.signature) return brand;
+  try {
+    const profile = await BusinessProfile.findOne({ owner: userId }).lean();
+    if (profile) {
+      if (profile.logoUrl) brand.logoDataUrl = profile.logoUrl;
+      if (profile.stampUrl) brand.stampDataUrl = profile.stampUrl;
+      if (profile.signatureUrl) brand.signatureDataUrl = profile.signatureUrl;
     }
-  });
-  return urls;
+  } catch { /* ignore */ }
+  return brand;
 }
+
 ////generate a unique number to avoid collision in the DB for the invoice no. 
 async function generateUniqueInvoiceNumber(attempts = 8) {
   for (let i = 0; i < attempts; i++) {
@@ -86,7 +80,7 @@ export async function createInvoice(req, res) {
       body.taxPercent ?? body.tax ?? body.defaultTaxPercent ?? 0
     );
     const totals = computeTotals(items, taxPercent);
-    const fileUrls = uploadedFilesToUrls(req);
+    const brand = await brandFallback(userId, body);
 
     // If client supplied invoiceNumber, ensure it doesn't already exist
     let invoiceNumberProvided =
@@ -129,15 +123,9 @@ export async function createInvoice(req, res) {
       currency: body.currency || "INR",
       status: body.status ? String(body.status).toLowerCase() : "draft",
       taxPercent,
-      logoDataUrl:
-        fileUrls.logoDataUrl || body.logoDataUrl || body.logo || null,
-      stampDataUrl:
-        fileUrls.stampDataUrl || body.stampDataUrl || body.stamp || null,
-      signatureDataUrl:
-        fileUrls.signatureDataUrl ||
-        body.signatureDataUrl ||
-        body.signature ||
-        null,
+      logoDataUrl: body.logoDataUrl || body.logo || brand.logoDataUrl || null,
+      stampDataUrl: body.stampDataUrl || body.stamp || brand.stampDataUrl || null,
+      signatureDataUrl: body.signatureDataUrl || body.signature || brand.signatureDataUrl || null,
       signatureName: body.signatureName || "",
       signatureTitle: body.signatureTitle || "",
       notes: body.notes || body.aiSource || "",
@@ -322,7 +310,6 @@ try{
       body.taxPercent ?? body.tax ?? body.defaultTaxPercent ?? existing.taxPercent ?? 0
     );
     const totals = computeTotals(items, taxPercent);
-    const fileUrls = uploadedFilesToUrls(req);
  const update = {
       invoiceNumber: body.invoiceNumber,
       issueDate: body.issueDate,
@@ -343,18 +330,9 @@ try{
       currency: body.currency,
       status: body.status ? String(body.status).toLowerCase() : undefined,
       taxPercent,
-      logoDataUrl:
-        fileUrls.logoDataUrl ||
-        (body.logoDataUrl || body.logo) ||
-        undefined,
-      stampDataUrl:
-        fileUrls.stampDataUrl ||
-        (body.stampDataUrl || body.stamp) ||
-        undefined,
-      signatureDataUrl:
-        fileUrls.signatureDataUrl ||
-        (body.signatureDataUrl || body.signature) ||
-        undefined,
+      logoDataUrl: body.logoDataUrl || body.logo || undefined,
+      stampDataUrl: body.stampDataUrl || body.stamp || undefined,
+      signatureDataUrl: body.signatureDataUrl || body.signature || undefined,
       signatureName: body.signatureName,
       signatureTitle: body.signatureTitle,
       notes: body.notes,
