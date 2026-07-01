@@ -37,7 +37,7 @@ app.use(express.json({limit:"20mb"}));
 app.use(express.urlencoded({limit: "20mb", extended:true}));
 
 //// routes
-app.get("/", (req, res) => {
+app.get("/api/health", (req, res) => {
     res.json({ success: true, message: "AI Invoice Generator Backend is running" });
 });
 app.use("/api/invoices", invoiceRouter);
