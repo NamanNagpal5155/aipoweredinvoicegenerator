@@ -22,6 +22,13 @@ app.use(cors({
 }));
 app.use(express.json({limit:"20mb"}));
 app.use(express.urlencoded({limit: "20mb", extended:true}));
+// ✅ Health check route
+app.get("/", (req, res) => {
+    res.json({
+        success: true,
+        message: "AI Invoice Generator Backend is running 🚀"
+    });
+});
 app.use("/api/invoices", invoiceRouter);
 app.use('/api/businessProfile',businessProfileRouter);
 app.use('/api/ai-invoice', aiInvoiceRouter);
