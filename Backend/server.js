@@ -1,5 +1,6 @@
 import express from 'express';
 import cors from 'cors';
+import { existsSync } from 'fs';
 import 'dotenv/config';
 import {connectDB} from './config/db.js'
 import { clerkMiddleware } from '@clerk/express'
@@ -28,17 +29,19 @@ app.use('/api/ai-invoice', aiInvoiceRouter);
 ////////db
 connectDB();
 
-////////static files (production)
+////////static files (production) — only if Frontend/dist/ exists
 const frontendDist = path.join(__dirname, '..', 'Frontend', 'dist');
-app.use(express.static(frontendDist));
+if (existsSync(frontendDist)) {
+  app.use(express.static(frontendDist));
 
-////////catch-all for SPA routing (production)
-app.get('/{*path}', (req, res) => {
-    if (req.path.startsWith('/api')) return;
-    res.sendFile(path.join(frontendDist, 'index.html'), err => {
-        if (err) res.status(404).send('Not found');
-    });
-});
+  /////////catch-all for SPA routing (production)
+  app.get('/{*path}', (req, res) => {
+      if (req.path.startsWith('/api')) return;
+      res.sendFile(path.join(frontendDist, 'index.html'), err => {
+          if (err) res.status(404).send('Not found');
+      });
+  });
+}
 
 app.listen(port,()=>{
     console.log(`server started on http://localhost:${port}`);
