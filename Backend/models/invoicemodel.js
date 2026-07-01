@@ -13,7 +13,7 @@ const ItemSchema = new mongoose.Schema({
         required:true,
         default:1
     },
-    uniPrice:{
+    unitPrice:{
         type:Number,
         required:true,
         default:0
@@ -58,6 +58,7 @@ const invoiceSchema= new mongoose.Schema({
       address: { type: String, default: "" },
       phone: { type: String, default: "" },
     },
+    items: { type: [ItemSchema], default: [] },
      currency: { type: String, default: "INR" },
     status: { type: String, enum: ["draft", "unpaid", "paid", "overdue"], default: "draft" },
 
@@ -72,6 +73,7 @@ const invoiceSchema= new mongoose.Schema({
 
     taxPercent: { type: Number, default: 18 },
 
+    notes: { type: String, default: "" },
     subtotal: { type: Number, default: 0 },
     tax: { type: Number, default: 0 },
     total: { type: Number, default: 0 },

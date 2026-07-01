@@ -1,6 +1,7 @@
 import mongoose from 'mongoose'
-import Invoice from './models/invoicemodel'
+import Invoice from '../models/invoicemodel.js'
 import {getAuth} from '@clerk/express'
+import path from 'path';
 const API_BASE='http://localhost:4000'
 function computeTotals(item =[], taxPercent =0){
     const safe = Array.isArray(item) ? item.filter(Boolean):[];
@@ -80,7 +81,7 @@ export async function createInvoice(req, res) {
     const body = req.body || {};
     const items = Array.isArray(body.items)
       ? body.items
-      : parseItemsField(body.items);
+      : parseItemField(body.items);
     const taxPercent = Number(
       body.taxPercent ?? body.tax ?? body.defaultTaxPercent ?? 0
     );
@@ -202,7 +203,7 @@ export async function getInvoices(req, res){
             }
             const q={owner:userId};
             if(req.query.status) q.status = req.query.status;
-            if(req.querry.invoiceNumber) q.invoiceNumber = req.query.invoiceNumber;
+            if(req.query.invoiceNumber) q.invoiceNumber = req.query.invoiceNumber;
             //// for filter
             if (req.query.search) {
       const search = req.query.search.trim();
@@ -249,12 +250,12 @@ export async function getInvoiceById(req,res){
               return res.status(403).json({
                 sucess:false,
                 message:"Forbidden not your invoice"
-              })
+              });
+            }
             return res.status(200).json({
               sucess:true,
               data:inv
             });
-            }
     }
     catch(err){
     console.error("GETINVOICEBYID ERROR" , err);
@@ -276,7 +277,7 @@ try{
             }
             const {id}=req.params;
             const body=req.body || {};
-            const query =isObjectString(id)?{_id:id,owner:userId}:{invoiceNumber:id,owner:userId}
+            const query =isObjectIdString(id)?{_id:id,owner:userId}:{invoiceNumber:id,owner:userId};
             const existing = await Invoice.findOne(query);
             if(!existing){
               return res.status(404).json({sucess:false , message:"Invoice not found"})
@@ -343,16 +344,20 @@ try{
       signatureTitle: body.signatureTitle,
       notes: body.notes,
     };
-  Object.keys(update).forEach((k)=> update[k]=== indefined && delete update[k]);
+  Object.keys(update).forEach((k)=> update[k]=== undefined && delete update[k]);
   const updated=await Invoice.findOneAndUpdate(
-    {_id:existing_id},
+    {_id:existing._id},
     {$set:update},
-    {new:true, runValidatros:true}
+    {new:true, runValidators:true}
   );
   if(!updated) return res.status(500).json({
+    sucess:false,
+    message:"Invoice not updated"
+  });
+  return res.status(200).json({
     sucess:true,
     message:"Invoice updated",
-     data:updated
+    data:updated
   });
 }
   catch (err) {
@@ -364,4 +369,36 @@ try{
     }
     return res.status(500).json({ success: false, message: "Server error" });
   }
+}
+
+export async function deleteInvoice(req,res){
+  try{
+      const {userId} =getAuth(req) || {};
+       if(!userId){
+            return res.status(401).json({
+        sucess:false,
+        message:"Authenticatin required."});
+            }
+             const {id}=req.params;
+            const query =isObjectIdString(id)?{_id:id,owner:userId}:
+            {invoiceNumber:id,owner:userId};
+            const found =await Invoice.findOne(query);
+            if(!found){ return res.status(404).json({
+              sucess:false,
+              message:"Invoice not found"
+            });
+  }
+  await Invoice.deleteOne({_id:found._id});
+  return res.status(200).json({
+    sucess:true,
+    message:"Invoice deleted sucessfully"
+  });
+}
+  catch(err){
+    console.error("DELETEINVOICE ERROR" , err);
+    return res.status(500).json({
+        sucess:false,
+        message:"Server Error"
+    });
+} 
 }
