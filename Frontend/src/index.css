@@ -28,6 +28,10 @@
   .no-print { display: none !important; }
   body { background: white !important; }
   #print-area { margin: 0; padding: 0; }
+  #print-area, #print-area * { visibility: visible; }
   #print-area > div { box-shadow: none !important; border: none !important; padding: 0 !important; }
+  #print-area table td, #print-area table th { border-color: #d1d5db !important; }
+  main { padding: 0 !important; }
+  .max-w-7xl { max-width: none !important; margin: 0 !important; }
   @page { margin: 1.5cm; size: auto; }
 }

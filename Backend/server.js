@@ -44,10 +44,7 @@ app.use("/api/invoices", invoiceRouter);
 app.use('/api/businessProfile',businessProfileRouter);
 app.use('/api/ai-invoice', aiInvoiceRouter);
 
-////////db (handle errors gracefully)
-connectDB().catch(err => console.error('MongoDB connection failed:', err.message));
-
-////////static files (production) — only if Frontend/dist/ exists
+//////////static files (production) — only if Frontend/dist/ exists
 const frontendDist = path.join(__dirname, '..', 'Frontend', 'dist');
 if (existsSync(frontendDist)) {
   app.use(express.static(frontendDist));
@@ -63,6 +60,16 @@ app.use((err, req, res, next) => {
     res.status(500).json({ success: false, message: 'Internal server error' });
 });
 
-app.listen(port,()=>{
+//////db & start server (wait for DB before listening)
+const start = async () => {
+  try {
+    await connectDB();
+    console.log('MongoDB connected');
+  } catch (err) {
+    console.error('MongoDB connection failed:', err.message);
+  }
+  app.listen(port, () => {
     console.log(`server started on http://localhost:${port}`);
-});
+  });
+};
+start();

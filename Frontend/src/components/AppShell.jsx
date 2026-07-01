@@ -27,7 +27,7 @@ export default function AppShell({ children }) {
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50/30 to-indigo-50/20">
       <div className="lg:flex">
         {sidebarOpen && (
-          <aside className="hidden lg:block w-72 bg-white/80 backdrop-blur-xl border-r border-gray-200/60 transition-all duration-500">
+          <aside className="hidden lg:block w-72 bg-white/80 backdrop-blur-xl border-r border-gray-200/60 transition-all duration-500 no-print">
             <div className="px-6 py-8 h-full flex flex-col justify-between">
               <div>
                 <div className="mb-12 flex items-center gap-3">
@@ -63,7 +63,7 @@ export default function AppShell({ children }) {
         )}
 
         <div className="flex-1 min-w-0">
-          <header className="sticky top-0 z-40 bg-white/80 backdrop-blur-xl border-b border-gray-200/60 px-4 sm:px-6 lg:px-8 min-h-16 flex items-center justify-between">
+          <header className="sticky top-0 z-40 bg-white/80 backdrop-blur-xl border-b border-gray-200/60 px-4 sm:px-6 lg:px-8 min-h-16 flex items-center justify-between no-print">
             <div className="flex items-center gap-3">
               <button onClick={() => setMobileOpen(true)} className="lg:hidden p-2 rounded-xl border border-gray-200 bg-white/50 hover:bg-white transition-all duration-300">
                 <svg className="w-5 h-5 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 6h16M4 12h16M4 18h16" /></svg>
@@ -85,7 +85,7 @@ export default function AppShell({ children }) {
           </header>
 
           {mobileOpen && (
-            <div className="lg:hidden fixed inset-0 z-50">
+            <div className="lg:hidden fixed inset-0 z-50 no-print">
               <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setMobileOpen(false)} />
               <aside className="absolute inset-y-0 left-0 w-80 bg-white/95 backdrop-blur-xl border-r border-gray-200/60 p-6 overflow-auto">
                 <div className="mb-8 flex items-center justify-between">
